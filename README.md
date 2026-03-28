@@ -159,7 +159,7 @@ service cloud.firestore {
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/Burabyo/bridgelingo.git
+git clone https://github.com/Noella-Ntare/bridgelingo.git
 cd bridgelingo/frontend
 ```
 
