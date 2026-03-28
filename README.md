@@ -285,9 +285,5 @@ Tests are located in `test/` and cover:
 
 ---
 
-##  License
 
-This project was developed for academic purposes at **AmaliTech Training Academy**.
-
----
 
