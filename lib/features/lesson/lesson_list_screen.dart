@@ -1,14 +1,25 @@
 import 'package:bridgelingo/features/dashboard/data/course_repository.dart';
 import 'package:bridgelingo/features/dashboard/domain/course_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 
 final courseLessonsProvider = FutureProvider.family<List<Lesson>, String>((ref, courseId) async {
-  final dio = ref.read(courseRepositoryProvider).dio;
-  final response = await dio.get('/courses/$courseId/lessons');
-  return (response.data as List).map((e) => Lesson.fromJson(e)).toList();
+  final snap = await FirebaseFirestore.instance
+      .collection('courses')
+      .doc(courseId)
+      .collection('lessons')
+      .orderBy('orderIndex')
+      .get();
+
+  return snap.docs.map((doc) => Lesson(
+    id: doc.id,
+    title: doc['title'] ?? '',
+    content: doc['content'] ?? '',
+    orderIndex: doc['orderIndex'] ?? 0,
+  )).toList();
 });
 
 class LessonListScreen extends ConsumerWidget {
@@ -26,7 +37,7 @@ class LessonListScreen extends ConsumerWidget {
         data: (lessons) => CustomScrollView(
           slivers: [
             SliverAppBar(
-              expandedHeight: 200.0,
+              expandedHeight: 200,
               floating: false,
               pinned: true,
               flexibleSpace: FlexibleSpaceBar(
@@ -36,41 +47,49 @@ class LessonListScreen extends ConsumerWidget {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.tertiary],
+                      colors: [
+                        Theme.of(context).colorScheme.primary,
+                        Theme.of(context).colorScheme.tertiary,
+                      ],
                     ),
                   ),
-                  child: const Center(
-                    child: Icon(Icons.school, size: 80, color: Colors.white24),
-                  ),
+                  child: const Center(child: Icon(Icons.school, size: 80, color: Colors.white24)),
                 ),
               ),
             ),
             SliverPadding(
               padding: const EdgeInsets.all(16),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final lesson = lessons[index];
-                    return _LessonCard(
-                      lesson: lesson,
-                      index: index,
-                      isLocked: false, // In real app, check progress
-                      onTap: () {
-                        context.push('/lesson/${lesson.id}', extra: {
-                          'courseId': courseId,
-                          'isLastLesson': index == lessons.length - 1,
-                        });
-                      },
-                    );
-                  },
-                  childCount: lessons.length,
-                ),
-              ),
+              sliver: lessons.isEmpty
+                  ? const SliverToBoxAdapter(
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: Text('No lessons yet. Check back soon!'),
+                        ),
+                      ),
+                    )
+                  : SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final lesson = lessons[index];
+                          return _LessonCard(
+                            lesson: lesson,
+                            index: index,
+                            isLocked: false,
+                            onTap: () => context.push('/lesson/${lesson.id}', extra: {
+                              'courseId': courseId,
+                              'isLastLesson': index == lessons.length - 1,
+                            }),
+                          );
+                        },
+                        childCount: lessons.length,
+                      ),
+                    ),
             ),
           ],
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, st) => Center(child: Text('Error: $err')),
+        error: (err, _) => Center(child: Text('Error: $err')),
       ),
     );
   }
@@ -99,14 +118,16 @@ class _LessonCard extends StatelessWidget {
         onTap: isLocked ? null : onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: Row(
             children: [
               Container(
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: isLocked ? Colors.grey.shade300 : Theme.of(context).colorScheme.primaryContainer,
+                  color: isLocked
+                      ? Colors.grey.shade300
+                      : Theme.of(context).colorScheme.primaryContainer,
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -134,10 +155,7 @@ class _LessonCard extends StatelessWidget {
                       ),
                     ),
                     const Gap(4),
-                    Text(
-                      'Tap to start',
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                    ),
+                    Text('Tap to start', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
                   ],
                 ),
               ),
