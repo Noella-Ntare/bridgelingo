@@ -2,6 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// UserStats: Data model for user dashboard statistics
+///
+/// Aggregates user progress metrics:
+/// - totalXp: Experience points earned
+/// - lessonsCompleted: Number of finished lessons
+/// - streakDays: Consecutive login days (motivation metric)
+/// - challengeLevel: Current difficulty level achieved
 class UserStats {
   final int totalXp;
   final int lessonsCompleted;
@@ -16,6 +23,16 @@ class UserStats {
   });
 }
 
+/// userStatsProvider: FutureProvider that fetches user stats from Firestore
+///
+/// Features:
+/// - autoDispose: Cleans up when no longer watched (memory efficient)
+/// - Real-time aggregation from Firestore collections
+/// - Requires authenticated user (throws if not logged in)
+/// - Used by DashboardScreen to show user progress summary
+///
+/// Architecture: Data layer provider that abstracts Firebase queries
+/// Consumers use AsyncValue pattern to handle loading/error/data states
 final userStatsProvider = FutureProvider.autoDispose<UserStats>((ref) async {
   final uid = FirebaseAuth.instance.currentUser?.uid;
   if (uid == null) throw Exception('Not logged in');
@@ -40,7 +57,9 @@ final userStatsProvider = FutureProvider.autoDispose<UserStats>((ref) async {
       .where('success', isEqualTo: true)
       .get();
 
-  final challengeLevel = challengeSnap.docs.isEmpty ? 1 : challengeSnap.docs.length + 1;
+  final challengeLevel = challengeSnap.docs.isEmpty
+      ? 1
+      : challengeSnap.docs.length + 1;
 
   // Get user doc for streak
   final userDoc = await firestore.collection('users').doc(uid).get();
