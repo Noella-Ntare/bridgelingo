@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const String kNotificationsKey = 'notifications';
+const String kLanguageKey = 'language';
+
 final notificationsProvider =
     StateNotifierProvider<NotificationsNotifier, bool>((ref) {
   return NotificationsNotifier();
