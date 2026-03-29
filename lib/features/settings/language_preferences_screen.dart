@@ -1,109 +1,144 @@
-import 'package:bridgelingo/features/dashboard/data/course_repository.dart';
+import 'package:bridgelingo/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:gap/gap.dart';
-import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class LanguagePreferencesScreen extends ConsumerStatefulWidget {
-  const LanguagePreferencesScreen({super.key});
+final notificationsProvider = StateNotifierProvider<NotificationsNotifier, bool>((ref) {
+  return NotificationsNotifier();
+});
 
-  @override
-  ConsumerState<LanguagePreferencesScreen> createState() => _LanguagePreferencesScreenState();
+class NotificationsNotifier extends StateNotifier<bool> {
+  NotificationsNotifier() : super(true) {
+    _load();
+  }
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getBool(kNotificationsKey) ?? true;
+  }
+  Future<void> toggle(bool value) async {
+    state = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(kNotificationsKey, value);
+  }
 }
 
-class _LanguagePreferencesScreenState extends ConsumerState<LanguagePreferencesScreen> {
-  final _storage = const FlutterSecureStorage();
-  String _selectedLanguage = 'English';
-  bool _isLoading = false;
+final languageProvider = StateNotifierProvider<LanguageNotifier, String>((ref) {
+  return LanguageNotifier();
+});
 
-  final List<String> _languages = ['English', 'French (Français)', 'Swahili (Kiswahili)'];
+class LanguageNotifier extends StateNotifier<String> {
+  LanguageNotifier() : super('English') {
+    _load();
+  }
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getString(kLanguageKey) ?? 'English';
+  }
+  Future<void> setLanguage(String lang) async {
+    state = lang;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(kLanguageKey, lang);
+  }
+}
+
+class LanguagePreferencesScreen extends ConsumerWidget {
+  const LanguagePreferencesScreen({super.key});
+
+  static const List<String> _languages = [
+    'English',
+    'French (Français)',
+    'Swahili (Kiswahili)',
+  ];
+
+  static const List<String> _themeLabels = ['System', 'Light', 'Dark'];
+  static const List<ThemeMode> _themeModes = [
+    ThemeMode.system,
+    ThemeMode.light,
+    ThemeMode.dark,
+  ];
 
   @override
-  void initState() {
-    super.initState();
-    _loadLanguage();
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+    final notifications = ref.watch(notificationsProvider);
+    final language = ref.watch(languageProvider);
 
-  Future<void> _loadLanguage() async {
-    final lang = await _storage.read(key: 'native_language');
-    if (lang != null && mounted) {
-      if (_languages.contains(lang)) {
-        setState(() => _selectedLanguage = lang);
-      } else {
-        // Handle case where stored string differs from options
-        setState(() => _selectedLanguage = 'English');
-      }
-    }
-  }
-
-  Future<void> _saveLanguage() async {
-    setState(() => _isLoading = true);
-    try {
-      final userId = await _storage.read(key: 'user_id');
-      if (userId == null) return;
-
-      // Update Backend (Reusing user update endpoint)
-      // Note: In real app, might want specific endpoint or ensure other fields aren't wiped.
-      // For now assuming the PUT merges or we only send what we change if backend supports PATCH.
-      // Based on previous edit_profile, it sends both name and lang. Let's try to get name first.
-      
-      final name = await _storage.read(key: 'user_name') ?? 'User';
-
-      await ref.read(courseRepositoryProvider).dio.put('/users/$userId', data: {
-        'fullName': name, 
-        'nativeLanguage': _selectedLanguage,
-      });
-
-      await _storage.write(key: 'native_language', value: _selectedLanguage);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Language updated!')));
-        context.pop();
-      }
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Language Preferences')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            const Text("Select your native language for translations."),
-            const Gap(24),
-            DropdownButtonFormField<String>(
-              value: _selectedLanguage,
-              items: _languages.map((String lang) {
-                return DropdownMenuItem<String>(
-                  value: lang,
-                  child: Text(lang),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                if (newValue != null) {
-                  setState(() => _selectedLanguage = newValue);
-                }
-              },
-              decoration: const InputDecoration(border: OutlineInputBorder()),
-            ),
-            const Gap(32),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: _isLoading ? null : _saveLanguage,
-                style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
-                child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("Save"),
+      appBar: AppBar(title: const Text('Settings & Preferences')),
+      body: ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          Text('Appearance', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const Gap(12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Theme'),
+                  const Gap(8),
+                  SegmentedButton<ThemeMode>(
+                    segments: List.generate(_themeLabels.length, (i) =>
+                      ButtonSegment(value: _themeModes[i], label: Text(_themeLabels[i])),
+                    ),
+                    selected: {themeMode},
+                    onSelectionChanged: (Set<ThemeMode> val) {
+                      ref.read(themeModeProvider.notifier).setTheme(val.first);
+                    },
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+
+          const Gap(24),
+          Text('Language', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const Gap(12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: DropdownButtonFormField<String>(
+                value: language,
+                decoration: const InputDecoration(
+                  labelText: 'Native Language',
+                  border: OutlineInputBorder(),
+                ),
+                items: _languages.map((lang) =>
+                  DropdownMenuItem(value: lang, child: Text(lang)),
+                ).toList(),
+                onChanged: (val) {
+                  if (val != null) ref.read(languageProvider.notifier).setLanguage(val);
+                },
+              ),
+            ),
+          ),
+
+          const Gap(24),
+          Text('Notifications', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const Gap(12),
+          Card(
+            child: SwitchListTile(
+              title: const Text('Daily Learning Reminders'),
+              subtitle: const Text('Get reminded to practice every day'),
+              value: notifications,
+              onChanged: (val) => ref.read(notificationsProvider.notifier).toggle(val),
+            ),
+          ),
+
+          const Gap(32),
+          FilledButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Preferences saved!')),
+              );
+              Navigator.of(context).pop();
+            },
+            style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
+            child: const Text('Save Preferences'),
+          ),
+        ],
       ),
     );
   }

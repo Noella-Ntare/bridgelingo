@@ -1,69 +1,129 @@
-import 'package:bridgelingo/core/network/dio_client.dart';
-import 'package:dio/dio.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepository(ref.watch(dioProvider).dio);
+  return AuthRepository(
+    FirebaseAuth.instance,
+    FirebaseFirestore.instance,
+    GoogleSignIn(),
+  );
+});
+
+// Stream that listens to auth state changes
+final authStateProvider = StreamProvider<User?>((ref) {
+  return ref.watch(authRepositoryProvider).authStateChanges;
 });
 
 class AuthRepository {
-  final Dio _dio;
+  final FirebaseAuth _auth;
+  final FirebaseFirestore _firestore;
+  final GoogleSignIn _googleSignIn;
 
-  AuthRepository(this._dio);
+  AuthRepository(this._auth, this._firestore, this._googleSignIn);
 
-  Future<Map<String, dynamic>> login(String email, String password) async {
-    try {
-      final response = await _dio.post('/auth/login', data: {
-        'email': email,
-        'password': password,
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  User? get currentUser => _auth.currentUser;
+
+  // --- Email/Password Register ---
+  Future<UserCredential> registerWithEmail({
+    required String fullName,
+    required String email,
+    required String password,
+  }) async {
+    final credential = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    // Update display name
+    await credential.user!.updateDisplayName(fullName);
+
+    // Send email verification
+    await credential.user!.sendEmailVerification();
+
+    // Save user profile to Firestore
+    await _firestore.collection('users').doc(credential.user!.uid).set({
+      'uid': credential.user!.uid,
+      'fullName': fullName,
+      'email': email,
+      'nativeLanguage': 'English',
+      'createdAt': FieldValue.serverTimestamp(),
+      'photoUrl': '',
+    });
+
+    return credential;
+  }
+
+  // --- Email/Password Login ---
+  Future<UserCredential> loginWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    final credential = await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    return credential;
+  }
+
+  // --- Google Sign-In ---
+  Future<UserCredential> signInWithGoogle() async {
+    final googleUser = await _googleSignIn.signIn();
+    if (googleUser == null) throw Exception('Google sign-in cancelled');
+
+    final googleAuth = await googleUser.authentication;
+    final oauthCredential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    final credential = await _auth.signInWithCredential(oauthCredential);
+
+    // Save to Firestore if new user
+    final doc = await _firestore
+        .collection('users')
+        .doc(credential.user!.uid)
+        .get();
+
+    if (!doc.exists) {
+      await _firestore
+          .collection('users')
+          .doc(credential.user!.uid)
+          .set({
+        'uid': credential.user!.uid,
+        'fullName': credential.user!.displayName ?? '',
+        'email': credential.user!.email ?? '',
+        'nativeLanguage': 'English',
+        'createdAt': FieldValue.serverTimestamp(),
+        'photoUrl': credential.user!.photoURL ?? '',
       });
-      return response.data;
-    } catch (e) {
-      throw _handleError(e);
     }
+
+    return credential;
   }
 
-  Future<Map<String, dynamic>> register(String fullName, String email, String password) async {
-    try {
-      final response = await _dio.post('/auth/register', data: {
-        'fullName': fullName,
-        'email': email,
-        'password': password,
-        'nativeLanguage': 'English', // Default
-      });
-      return response.data;
-    } catch (e) {
-      throw _handleError(e);
-    }
+  // --- Forgot Password ---
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _auth.sendPasswordResetEmail(email: email);
   }
 
-  Future<void> forgotPassword(String email) async {
-    try {
-      await _dio.post('/auth/forgot-password', data: {'email': email});
-    } catch (e) {
-      throw _handleError(e);
-    }
+  // --- Logout ---
+  Future<void> signOut() async {
+    await _googleSignIn.signOut();
+    await _auth.signOut();
   }
 
-  Future<void> resetPassword(String token, String newPassword) async {
-    try {
-      await _dio.post('/auth/reset-password', data: {
-        'token': token,
-        'newPassword': newPassword,
-      });
-    } catch (e) {
-      throw _handleError(e);
-    }
+  // --- Get user profile from Firestore ---
+  Future<Map<String, dynamic>?> getUserProfile(String uid) async {
+    final doc = await _firestore.collection('users').doc(uid).get();
+    return doc.data();
   }
 
-  String _handleError(dynamic error) {
-    print('AuthRepository Error: $error');
-    if (error is DioException) {
-      print('DioError Type: ${error.type}');
-      print('DioError Message: ${error.message}');
-      print('DioError Response: ${error.response}');
-      return error.response?.data['message'] ?? 'An error occurred: ${error.message}';
-    }
-    return error.toString();
+  // --- Update user profile ---
+  Future<void> updateUserProfile(String uid, Map<String, dynamic> data) async {
+    await _firestore.collection('users').doc(uid).update(data);
   }
 }
