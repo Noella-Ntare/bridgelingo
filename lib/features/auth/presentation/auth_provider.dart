@@ -3,10 +3,33 @@ import 'package:bridgelingo/features/auth/data/auth_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final authProvider = StateNotifierProvider<AuthNotifier, AsyncValue<void>>((ref) {
+/// AuthProvider: A Riverpod StateNotifierProvider that manages authentication state
+///
+/// This provider handles:
+/// - Email/Password login & registration
+/// - Google Sign-In (OAuth 2.0)
+/// - Password reset flows
+/// - Logout & session management
+/// - Error state & loading states (AsyncValue)
+///
+/// Architecture: Uses Riverpod for reactive state management with separation of concerns:
+/// - AuthNotifier = Business logic (state transitions)
+/// - AuthRepository = Firebase API interactions (data layer)
+/// - AsyncValue<void> = Loading | Success | Error states
+final authProvider = StateNotifierProvider<AuthNotifier, AsyncValue<void>>((
+  ref,
+) {
   return AuthNotifier(ref.watch(authRepositoryProvider), ref);
 });
 
+/// AuthNotifier: StateNotifier for managing authentication state transitions
+///
+/// Responsibilities:
+/// 1. Handle user login, registration, and logout
+/// 2. Manage authentication state (Loading | Success | Error)
+/// 3. Persist session tokens to secure storage
+/// 4. Route user to appropriate screen based on auth state
+/// 5. Convert Firebase exceptions to user-friendly error messages
 class AuthNotifier extends StateNotifier<AsyncValue<void>> {
   final AuthRepository _repository;
   final Ref _ref;
