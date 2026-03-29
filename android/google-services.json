@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1064813346164",
+    "project_id": "bridgelingo-2a5c5",
+    "storage_bucket": "bridgelingo-2a5c5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1064813346164:android:596e09f23e8cc7e9168021",
+        "android_client_info": {
+          "package_name": "com.example.bridgelingo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1064813346164-gu2f5i5ts4kme1kea6ms952o1ljbtvqc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANMOElCNOQ9FpJT9QSopTAsYQlKBjc14Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1064813346164-gu2f5i5ts4kme1kea6ms952o1ljbtvqc.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
