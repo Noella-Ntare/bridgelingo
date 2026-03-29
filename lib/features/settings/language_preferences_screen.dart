@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-final notificationsProvider = StateNotifierProvider<NotificationsNotifier, bool>((ref) {
+final notificationsProvider =
+    StateNotifierProvider<NotificationsNotifier, bool>((ref) {
   return NotificationsNotifier();
 });
 
@@ -16,6 +17,7 @@ class NotificationsNotifier extends StateNotifier<bool> {
     final prefs = await SharedPreferences.getInstance();
     state = prefs.getBool(kNotificationsKey) ?? true;
   }
+
   Future<void> toggle(bool value) async {
     state = value;
     final prefs = await SharedPreferences.getInstance();
@@ -35,6 +37,7 @@ class LanguageNotifier extends StateNotifier<String> {
     final prefs = await SharedPreferences.getInstance();
     state = prefs.getString(kLanguageKey) ?? 'English';
   }
+
   Future<void> setLanguage(String lang) async {
     state = lang;
     final prefs = await SharedPreferences.getInstance();
@@ -69,7 +72,11 @@ class LanguagePreferencesScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          Text('Appearance', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Text('Appearance',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold)),
           const Gap(12),
           Card(
             child: Padding(
@@ -80,8 +87,10 @@ class LanguagePreferencesScreen extends ConsumerWidget {
                   const Text('Theme'),
                   const Gap(8),
                   SegmentedButton<ThemeMode>(
-                    segments: List.generate(_themeLabels.length, (i) =>
-                      ButtonSegment(value: _themeModes[i], label: Text(_themeLabels[i])),
+                    segments: List.generate(
+                      _themeLabels.length,
+                      (i) => ButtonSegment(
+                          value: _themeModes[i], label: Text(_themeLabels[i])),
                     ),
                     selected: {themeMode},
                     onSelectionChanged: (Set<ThemeMode> val) {
@@ -92,9 +101,12 @@ class LanguagePreferencesScreen extends ConsumerWidget {
               ),
             ),
           ),
-
           const Gap(24),
-          Text('Language', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Text('Language',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold)),
           const Gap(12),
           Card(
             child: Padding(
@@ -105,28 +117,35 @@ class LanguagePreferencesScreen extends ConsumerWidget {
                   labelText: 'Native Language',
                   border: OutlineInputBorder(),
                 ),
-                items: _languages.map((lang) =>
-                  DropdownMenuItem(value: lang, child: Text(lang)),
-                ).toList(),
+                items: _languages
+                    .map(
+                      (lang) =>
+                          DropdownMenuItem(value: lang, child: Text(lang)),
+                    )
+                    .toList(),
                 onChanged: (val) {
-                  if (val != null) ref.read(languageProvider.notifier).setLanguage(val);
+                  if (val != null)
+                    ref.read(languageProvider.notifier).setLanguage(val);
                 },
               ),
             ),
           ),
-
           const Gap(24),
-          Text('Notifications', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Text('Notifications',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold)),
           const Gap(12),
           Card(
             child: SwitchListTile(
               title: const Text('Daily Learning Reminders'),
               subtitle: const Text('Get reminded to practice every day'),
               value: notifications,
-              onChanged: (val) => ref.read(notificationsProvider.notifier).toggle(val),
+              onChanged: (val) =>
+                  ref.read(notificationsProvider.notifier).toggle(val),
             ),
           ),
-
           const Gap(32),
           FilledButton(
             onPressed: () {
