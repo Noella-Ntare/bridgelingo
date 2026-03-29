@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 
+// Intro/welcome screen shown when the app launches
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
@@ -9,6 +10,7 @@ class WelcomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        // Gradient background from primary to tertiary theme color
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -23,7 +25,8 @@ class WelcomeScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Spacer(),
-                // Logo
+
+                // Logo with shadow and rounded corners
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(30),
@@ -44,6 +47,8 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                 ),
                 const Gap(40),
+
+                // Welcome title
                 Text(
                   'Welcome to BridgeLingo',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -53,6 +58,8 @@ class WelcomeScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 const Gap(16),
+
+                // Intro message
                 Text(
                   'Master Kinyarwanda with AI-powered lessons and real-time feedback.',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -61,6 +68,8 @@ class WelcomeScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 const Spacer(),
+
+                // "Get Started" button navigating to login
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
@@ -75,7 +84,10 @@ class WelcomeScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Text('Get Started', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Get Started',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
                 const Gap(40),
