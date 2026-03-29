@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
+// Screen for handling password reset via email
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -12,20 +13,27 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
-  final _emailController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-  bool _isLoading = false;
-  bool _emailSent = false;
+  final _emailController = TextEditingController(); // stores email input
+  final _formKey = GlobalKey<FormState>(); // form validation key
+  bool _isLoading = false; // shows loader when request is in progress
+  bool _emailSent = false; // switches UI after successful request
 
+  // Handles form submission
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
     setState(() => _isLoading = true);
     try {
-      await ref.read(authRepositoryProvider).sendPasswordResetEmail(_emailController.text.trim());
+      // Call auth repository to send reset email
+      await ref.read(authRepositoryProvider)
+          .sendPasswordResetEmail(_emailController.text.trim());
+
       if (mounted) setState(() => _emailSent = true);
     } catch (e) {
+      // Show error message if request fails
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -38,11 +46,13 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       appBar: AppBar(title: const Text('Forgot Password')),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
+        // Switch between form and success message
         child: _emailSent ? _buildSuccessView() : _buildFormView(),
       ),
     );
   }
 
+  // Form UI for entering email
   Widget _buildFormView() {
     return Form(
       key: _formKey,
@@ -65,13 +75,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.email),
             ),
+            // Basic email validation
             validator: (v) => v != null && v.contains('@') ? null : 'Enter a valid email',
           ),
           const Gap(24),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: _isLoading ? null : _submit,
+              onPressed: _isLoading ? null : _submit, // disable when loading
               style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
               child: _isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
@@ -80,7 +91,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           ),
           const Gap(16),
           TextButton(
-            onPressed: () => context.go('/login'),
+            onPressed: () => context.go('/login'), // navigate back to login
             child: const Text('Back to Login'),
           ),
         ],
@@ -88,13 +99,17 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     );
   }
 
+  // Success UI shown after email is sent
   Widget _buildSuccessView() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Icon(Icons.mark_email_read, size: 80, color: Color(0xFF006B54)),
         const Gap(24),
-        const Text('Email Sent!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        const Text(
+          'Email Sent!',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
         const Gap(16),
         Text(
           'We sent a password reset link to ${_emailController.text}. Check your inbox.',
