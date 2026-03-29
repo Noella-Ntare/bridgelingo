@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 
+// Screen for user registration
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
@@ -18,6 +19,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
 
+  // Triggers registration using provider
   void _register() {
     ref.read(authProvider.notifier).register(
           _nameController.text,
@@ -28,13 +30,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
+    final authState = ref.watch(authProvider); // listens to auth state
 
     return Scaffold(
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: SingleChildScrollView(
+            // Allows scrolling on smaller screens
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -48,18 +51,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 const Text('Start your journey to mastering Kinyarwanda!'),
                 const Gap(40),
+
+                // Name input
                 CustomTextField(
                   label: 'Full Name',
                   controller: _nameController,
                   icon: Icons.person_outline,
                 ),
                 const Gap(16),
+
+                // Email input
                 CustomTextField(
                   label: 'Email',
                   controller: _emailController,
                   icon: Icons.email_outlined,
                 ),
                 const Gap(16),
+
+                // Password input
                 CustomTextField(
                   label: 'Password',
                   controller: _passwordController,
@@ -67,12 +76,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   isPassword: true,
                 ),
                 const Gap(32),
+
+                // Submit button with loading state
                 GradientButton(
                   text: 'Sign Up',
                   onTap: _register,
                   isLoading: authState.isLoading,
                 ),
                 const Gap(24),
+
+                // Navigation to login screen
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
